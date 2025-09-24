@@ -10,12 +10,12 @@ static constexpr gpio_num_t PIN_MOSI = GPIO_NUM_5;
 static constexpr gpio_num_t PIN_MISO = GPIO_NUM_6;
 static constexpr gpio_num_t PIN_SCLK = GPIO_NUM_4;
 
-static constexpr Lr1121Pins LR_PINS{
+static constexpr lr1121_pins LR_PINS{
     .nss = GPIO_NUM_7,
     .busy = GPIO_NUM_15,
     .rst = GPIO_NUM_16};
 
-static const char *TAG = "APP";
+static constexpr char *TAG = "APP";
 
 extern "C" void app_main(void)
 {
@@ -29,42 +29,42 @@ extern "C" void app_main(void)
 
   ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
-  Lr1121 lr(SPI2_HOST, LR_PINS, 8'000'000);
+  lr1121 lr(SPI2_HOST, LR_PINS, 8'000'000);
   auto err = lr.init();
-  if (err != Lr1121Err::OK)
+  if (err != lr1121_err::OK)
   {
-    ESP_LOGE(TAG, "LR1121 init failed: 0x%x", (int)err);
+    ESP_LOGE(TAG, "lr1121 init failed: 0x%x", (int)err);
     return;
   }
 
   err = lr.reset();
-  if (err != Lr1121Err::OK)
+  if (err != lr1121_err::OK)
   {
-    ESP_LOGE(TAG, "LR1121 reset failed: 0x%x", (int)err);
+    ESP_LOGE(TAG, "lr1121 reset failed: 0x%x", (int)err);
     return;
   }
 
-  Lr1121Version ver{};
+  lr1121_version ver{};
   err = lr.get_version(&ver);
-  if (err != Lr1121Err::OK)
+  if (err != lr1121_err::OK)
   {
     ESP_LOGE(TAG, "GetVersion failed: 0x%x", (int)err);
     return;
   }
 
-  ESP_LOGI(TAG, "LR1121 Version -> HardWare:0x%02X  UseCase:0x%02X  FirmWare:%u.%u",
+  ESP_LOGI(TAG, "lr1121 Version -> HardWare:0x%02X  UseCase:0x%02X  FirmWare:%u.%u",
            ver.hw_version, ver.use_case, ver.fw_major, ver.fw_minor);
 
   switch (ver.use_case)
   {
   case 0x03:
-    ESP_LOGI(TAG, "Use Case: LR1121");
+    ESP_LOGI(TAG, "Use Case: lr1121");
     break;
   case 0xDF:
     ESP_LOGW(TAG, "Use Case: Bootloader mode!");
     break;
   default:
-    ESP_LOGW(TAG, "Use Case: 0x%02X (unexpected for LR1121)", ver.use_case);
+    ESP_LOGW(TAG, "Use Case: 0x%02X (unexpected for lr1121)", ver.use_case);
     break;
   }
 

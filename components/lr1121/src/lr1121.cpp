@@ -7,7 +7,7 @@
 #include "esp_log.h"
 #include <cstring>
 
-static const char *TAG = "LR1121";
+static constexpr char TAG[] = "lr1121";
 
 namespace
 {
@@ -19,10 +19,10 @@ namespace
   constexpr int kSpiMode = 0;
 }
 
-Lr1121::Lr1121(spi_host_device_t host, const Lr1121Pins &pins, int spi_clock_hz) noexcept
+lr1121::lr1121(spi_host_device_t host, const lr1121_pins &pins, int spi_clock_hz) noexcept
     : host_(host), pins_(pins), clk_hz_(spi_clock_hz) {}
 
-Lr1121Err Lr1121::init()
+lr1121_err lr1121::init()
 {
 
   gpio_config_t io{};
@@ -33,7 +33,7 @@ Lr1121Err Lr1121::init()
   io.pull_down_en = GPIO_PULLDOWN_DISABLE;
   io.pull_up_en = GPIO_PULLUP_DISABLE;
   if (gpio_config(&io) != ESP_OK)
-    return Lr1121Err::InvalidArg;
+    return lr1121_err::InvalidArg;
 
   io = {};
   io.intr_type = GPIO_INTR_DISABLE;
@@ -42,7 +42,7 @@ Lr1121Err Lr1121::init()
   io.pull_down_en = GPIO_PULLDOWN_DISABLE;
   io.pull_up_en = GPIO_PULLUP_DISABLE;
   if (gpio_config(&io) != ESP_OK)
-    return Lr1121Err::InvalidArg;
+    return lr1121_err::InvalidArg;
 
   spi_device_interface_config_t devcfg{};
   devcfg.clock_speed_hz = clk_hz_;
@@ -55,12 +55,12 @@ Lr1121Err Lr1121::init()
 
   auto err = spi_bus_add_device(host_, &devcfg, &dev_);
   if (err != ESP_OK)
-    return Lr1121Err::SpiTransfer;
+    return lr1121_err::SpiTransfer;
 
-  return Lr1121Err::OK;
+  return lr1121_err::OK;
 }
 
-Lr1121Err Lr1121::reset(uint32_t reset_low_us, uint32_t post_reset_wait_ms)
+lr1121_err lr1121::reset(uint32_t reset_low_us, uint32_t post_reset_wait_ms)
 {
   gpio_set_level(pins_.rst, 0);
   esp_rom_delay_us(reset_low_us);
@@ -69,7 +69,7 @@ Lr1121Err Lr1121::reset(uint32_t reset_low_us, uint32_t post_reset_wait_ms)
   return wait_while_busy(250000);
 }
 
-Lr1121Err Lr1121::wait_while_busy(uint32_t timeout_us)
+lr1121_err lr1121::wait_while_busy(uint32_t timeout_us)
 {
   const int busy_pin = pins_.busy;
   const int64_t start = esp_timer_get_time();
@@ -78,16 +78,16 @@ Lr1121Err Lr1121::wait_while_busy(uint32_t timeout_us)
     if ((uint32_t)(esp_timer_get_time() - start) > timeout_us)
     {
       ESP_LOGE(TAG, "BUSY timeout");
-      return Lr1121Err::TimeoutBusy;
+      return lr1121_err::TimeoutBusy;
     }
   }
-  return Lr1121Err::OK;
+  return lr1121_err::OK;
 }
 
-Lr1121Err Lr1121::write_cmd(uint8_t op_hi, uint8_t op_lo)
+lr1121_err lr1121::write_cmd(uint8_t op_hi, uint8_t op_lo)
 {
   auto e = wait_while_busy(20000);
-  if (e != Lr1121Err::OK)
+  if (e != lr1121_err::OK)
     return e;
 
   uint8_t tx[2] = {op_hi, op_lo};
@@ -96,16 +96,16 @@ Lr1121Err Lr1121::write_cmd(uint8_t op_hi, uint8_t op_lo)
   t.tx_buffer = tx;
 
   auto err = spi_device_transmit(dev_, &t);
-  return (err == ESP_OK) ? Lr1121Err::OK : Lr1121Err::SpiTransfer;
+  return (err == ESP_OK) ? lr1121_err::OK : lr1121_err::SpiTransfer;
 }
 
-Lr1121Err Lr1121::read_response(uint8_t *rx, size_t len)
+lr1121_err lr1121::read_response(uint8_t *rx, size_t len)
 {
   if (!rx || len == 0)
-    return Lr1121Err::InvalidArg;
+    return lr1121_err::InvalidArg;
 
   auto e = wait_while_busy(20000);
-  if (e != Lr1121Err::OK)
+  if (e != lr1121_err::OK)
     return e;
 
   uint8_t tx_dummy[32];
@@ -125,26 +125,26 @@ Lr1121Err Lr1121::read_response(uint8_t *rx, size_t len)
 
     auto err = spi_device_transmit(dev_, &t);
     if (err != ESP_OK)
-      return Lr1121Err::SpiTransfer;
+      return lr1121_err::SpiTransfer;
 
     offset += chunk;
     remaining -= chunk;
   }
-  return Lr1121Err::OK;
+  return lr1121_err::OK;
 }
 
-Lr1121Err Lr1121::get_version(Lr1121Version *out)
+lr1121_err lr1121::get_version(lr1121_version *out)
 {
   if (!out)
-    return Lr1121Err::InvalidArg;
+    return lr1121_err::InvalidArg;
 
   auto e = write_cmd(OP_GET_VERSION_H, OP_GET_VERSION_L);
-  if (e != Lr1121Err::OK)
+  if (e != lr1121_err::OK)
     return e;
 
   uint8_t buf[5] = {};
   e = read_response(buf, sizeof(buf));
-  if (e != Lr1121Err::OK)
+  if (e != lr1121_err::OK)
     return e;
 
   out->hw_version = buf[1];
@@ -152,5 +152,5 @@ Lr1121Err Lr1121::get_version(Lr1121Version *out)
   out->fw_major = buf[3];
   out->fw_minor = buf[4];
 
-  return Lr1121Err::OK;
+  return lr1121_err::OK;
 }

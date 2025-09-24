@@ -15,7 +15,7 @@ static constexpr lr1121_pins LR_PINS{
     .busy = GPIO_NUM_15,
     .rst = GPIO_NUM_16};
 
-static constexpr char *TAG = "APP";
+static constexpr char TAG[] = "APP";
 
 extern "C" void app_main(void)
 {
